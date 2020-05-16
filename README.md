@@ -9,6 +9,7 @@ monofont: inconsolata
 ## Light Panel
 ### 10x10 LED grid
 - 4b x 4b   output  (row, column) enable
+- 1b        output  address enable
 - 1b        output  diagnostic mode flag
 
 ### 10-key keypad
