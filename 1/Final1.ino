@@ -53,52 +53,65 @@
 void runDiagnostics();
 void display(byte type, byte x);
 bool checkPassword();
+static void displayStep(byte type, byte x);
 
 // Global Variables
-const char toggle[] = "1212";
-char password[] = "1234";
+const byte changePW[] = { 1, 2, 1, 2 };
+byte password[] = { 1, 2, 3, 4 };
 byte current_mode = NUMBER;
-char input[] = "XXXXXXXX";
+byte input[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 char input_ptr = 0;
 byte audio_state = 0;
+bool just_toggled = false;
+
+byte key_press = 0xFF;
+bool keypad_state = false;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   DDRD |= 0b1111111;    // 0-7   Output
-  DDRB |= 0b1111;       // 8-11  Output
+  DDRB |= 0b111111;     // 8-13  Output
   DDRC &= ~(0b11111);   // A0-A4 Input
   CLEAR_LEDS();
 
   runDiagnostics();
 }
 
-/*
- * read key_press
- * accumulate input
- * display current_mode symbol
- * if input == current_mode password:
- *    toggle current_mode
- * else if input == 1212 + 4 keys:
- *    set password
- */
 void loop() {
-  if (!BIT_READ(PINC, KEYPAD_ACTIVE)) return;
+  if (!BIT_READ(PINC, KEYPAD_ACTIVE)) {
+    keypad_state = false;
+    displayStep(current_mode ^ just_toggled, key_press);
+    return;
+  }
+  // If a button was just pressed
+  if (!keypad_state) {
+    // Set the button to pressed
+    keypad_state = true;
 
-  // Read key press
-  byte key_press = PINC & 0b1111;
+    // Read key press
+    key_press = PINC & 0b1111;
 
-  // Accumulate input
-  input[input_ptr] = char('0' + key_press);
-  input_ptr = (input_ptr+1) % 8;
+    // Accumulate input
+    input[input_ptr] = key_press;
+    input_ptr = (input_ptr+1) % 8;
 
-  // Display symbol
-  display(current_mode, key_press);
+    // Clear the recent toggle flag
+    just_toggled = false;
+  }
+  displayStep(current_mode ^ just_toggled, key_press);
 
   // Toggle current mode
   changePassword();
   if (checkPassword()) {
     current_mode = !current_mode;
-  }
+    just_toggled = true;
+
+    // Clear the input buffer
+    for (byte i = 0; i < 8; i++) {
+      input[i] = 0xFF;
+    }
+    input_ptr = 0;
+  } 
 }
 
 void runDiagnostics() {
@@ -133,7 +146,7 @@ void changePassword() {
 
   bool match = true;
   for (byte i = 0; i < 4; i++) {
-    if (input[ptr] != toggle[i]) {
+    if (input[ptr] != changePW[i]) {
       match = false;
       break;
     }
@@ -141,10 +154,10 @@ void changePassword() {
     ptr = ptr < size ? ptr : ptr - size; 
   }
 
-  char temp[] = "XXXX";
+  byte temp[] = { 0xFF, 0xFF, 0xFF, 0xFF };
   if (match) {
     for (byte i = 0; i < 4; i++) {
-      if (input[ptr] == 'X') {
+      if (input[ptr] == 0xFF) {
         match = false;
         break;
       } else {
@@ -158,6 +171,14 @@ void changePassword() {
     for (byte i = 0; i < 4; i++) {
       password[i] = temp[i];
     }
+    digitalWrite(LED_BUILTIN, HIGH);
+    DELAY_MS(8);
+    // Clear the input buffer
+    for (byte i = 0; i < 8; i++) {
+      input[i] = 0xFF;
+    }
+    input_ptr = 0;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 }
 
@@ -168,7 +189,6 @@ bool checkPassword() {
 
   bool match = true;
   for (byte i = 0; i < 4; i++) {
-
     if (current_mode == NUMBER) {
       if (input[ptr] != password[i]) {
         match = false;
@@ -237,9 +257,20 @@ const byte num_9[] = { 0x13, 0x14, 0x15, 0x16, 0x23, 0x26, 0x33, 0x36, 0x43, 0x4
 const byte* numbers[10] = { num_0, num_1, num_2, num_3, num_4, num_5, num_6, num_7, num_8, num_9, };
 const byte numbers_n[10] = { 20, 19, 17, 17, 14, 17, 19, 15, 32, 19  };
 
-void display(byte type, byte x) {
-  CLEAR_LEDS();
-  BIT_SET(PORTB, DATA);
+void displayStep(byte type, byte x) {
+  static byte previousX = 0xFF;
+  static byte previousType = 0xFF;
+  static byte iX = 0;
+  static unsigned long previousTime = 0;
+
+  // If we're drawing a new shape, reset the index
+  if (x != previousX || type != previousType) {
+    iX = 0;
+    CLEAR_LEDS();
+    BIT_SET(PORTB, DATA);
+    previousX = x;
+    previousType = type;
+  }
   byte count;
   byte* array;
 
@@ -251,11 +282,14 @@ void display(byte type, byte x) {
     array = emojis[x];
   } else return;
 
-  for (byte i = 0; i < count; i++) {
-    byte cell = array[i];
-    digitalWrite(8 + ADR_EN, LOW);
-    PORTD = cell;
-    digitalWrite(8 + ADR_EN, HIGH);
-    DELAY_MS(4);
-  } 
+  // If the shape is complete, return
+  // If not enough time has passed, return
+  if (iX == count) return;
+  if (millis() - previousTime < 5) return;
+
+  // Display and increment index
+  digitalWrite(8 + ADR_EN, LOW);
+  PORTD = array[iX++];
+  digitalWrite(8 + ADR_EN, HIGH);
+  previousTime = millis();
 }

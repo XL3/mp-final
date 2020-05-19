@@ -7,7 +7,7 @@
 #define MIXER_A A1
 #define MIXER_B A0
 
-#define VALVE   0
+#define VANILLA 0
 #define HEATER  1
 #define ARM     2
 #define CAKE_A  3
@@ -18,6 +18,11 @@
 #define KEYPAD_0      8
 #define KEYPAD_1      9
 #define KEYPAD_ACTIVE 10
+
+#define EGGS    11
+#define SUGAR   12
+#define FLOUR   13
+
 
 #define CLOSE         0ul
 #define OPEN          180ul
@@ -45,7 +50,10 @@ struct Servo {
   byte pin;
   void move(unsigned long deg);
 };
-Servo valve = { VALVE };
+Servo eggs = { EGGS };
+Servo vanilla = { VANILLA };
+Servo sugar = { SUGAR };
+Servo flour = { FLOUR };
 Servo arm = { ARM };
 
 bool buttonState = false;
@@ -55,14 +63,15 @@ void setup() {
   DDRC |= 0b1111;
   DDRD |= 0b1111111;
   DDRB &= ~(0b111);
+  DDRB |= 0b111 << 3;
 }
 
 void loop() {
   /// Make the cake
   // Open the eggs valve for 500ms
-  valve.move(OPEN);
+  eggs.move(OPEN);
   delay(500);
-  valve.move(CLOSE);
+  eggs.move(CLOSE);
 
   // Start the mixer for 5 rotations
   while (mixer.step_number < 5 * mixer.steps) 
@@ -72,18 +81,18 @@ void loop() {
   // Open the vanilla valve for 100ms
   // Keep rotating the mixer for 4 more rotations
   unsigned long now = millis();
-  valve.move(OPEN);
+  vanilla.move(OPEN);
   while (mixer.step_number < 4 * mixer.steps) {
     mixer.move();
     if (millis() - now >= 100)
-      valve.move(CLOSE);
+      vanilla.move(CLOSE);
   }
   mixer.step_number = 0;
 
   // Open the sugar valve for 200ms
-  valve.move(OPEN);
+  sugar.move(OPEN);
   delay(200);
-  valve.move(CLOSE);
+  sugar.move(CLOSE);
 
   // Make another 10 mixer rotations
   while (mixer.step_number < 10 * mixer.steps) 
@@ -94,9 +103,9 @@ void loop() {
   // Do the following three times
   for (byte t = 0; t < 3; t++) {
     // Open the flour valve for 100ms
-    valve.move(OPEN);
+    flour.move(OPEN);
     delay(100);
-    valve.move(CLOSE);
+    flour.move(CLOSE);
 
     // Make 4 mixer rotations
     while (mixer.step_number < 4 * mixer.steps) 
