@@ -21,9 +21,11 @@
 
 #define CLOSE         0ul
 #define OPEN          180ul
-#define OUTER         0ul
-#define MIDDLE        90ul
-#define INNER         180ul
+
+#define OUTER         10ul
+#define MIDDLE        50ul
+#define INNER         70ul
+#define CORE          90ul
 
 struct Stepper {
   byte pinA, pinB;
@@ -180,7 +182,7 @@ void Servo::move(unsigned long deg) {
 void decorateCake(byte decoration) {
   switch (decoration) {
   case 0:
-    arm.move(OUTER);                      // Move to outer sector
+    arm.move(OUTER);                      // Move to outer track
     digitalWrite(RASP, HIGH);             // Open raspberry valve
     while (cake.step_number < cake.steps) // Move cake stand one full rotation
       cake.move();
@@ -188,7 +190,7 @@ void decorateCake(byte decoration) {
     digitalWrite(RASP, LOW);              // Close raspberry valve
     delay(300);
 
-    arm.move(MIDDLE);                     // Move to middle sector
+    arm.move(MIDDLE);                     // Move to middle track
     digitalWrite(PINE, HIGH);             // Open pineapple valve
     while (cake.step_number < cake.steps) // Move cake stand one full rotation
       cake.move();
@@ -198,7 +200,7 @@ void decorateCake(byte decoration) {
 
   case 1:
     for (byte r = 0; r < 4; r++) {          
-      arm.move(OUTER);                        // Move to outer sector
+      arm.move(OUTER);                        // Move to outer track
       digitalWrite(RASP, HIGH);               // Open raspberry valve
       while (cake.step_number < cake.steps/8) // Move cake stand 1/8 rotation
         cake.move();                  
@@ -206,7 +208,7 @@ void decorateCake(byte decoration) {
       digitalWrite(RASP, LOW);                // Close raspberry valve
       delay(300);
 
-      arm.move(MIDDLE);                       // Move to middle sector
+      arm.move(MIDDLE);                       // Move to middle track
       digitalWrite(PINE, HIGH);               // Open pineapple valve
       while (cake.step_number < cake.steps/8) // Move cake stand 1/8 rotation
         cake.move();
@@ -217,7 +219,7 @@ void decorateCake(byte decoration) {
     break;
 
   case 2:
-    arm.move(OUTER);                           // Move to outer sector
+    arm.move(OUTER);                           // Move to outer track
     for (byte r = 0; r < 14; r++) {
       while (cake.step_number < cake.steps/14) // Move cake stand 1/14 rotation
         cake.move();
@@ -227,14 +229,14 @@ void decorateCake(byte decoration) {
       digitalWrite(RASP, LOW);                 // Close raspberry valve
       delay(300);
     }
-    arm.move(INNER);                           // Move to inner sector
+    arm.move(CORE);                            // Move to core track
     digitalWrite(PINE, HIGH);                  // Open pineapple valve
     delay(300);
     digitalWrite(PINE, LOW);                   // Close pineapple valve
     break;
 
   case 3:
-    arm.move(OUTER);                           // Move to outer sector
+    arm.move(OUTER);                           // Move to outer track
     for (byte r = 0; r < 14; r++) {
       while (cake.step_number < cake.steps/14) // Move cake stand 1/14 rotation
         cake.move();
@@ -246,13 +248,13 @@ void decorateCake(byte decoration) {
     }
     digitalWrite(RASP, HIGH);                  // Open pineapple valve
     // Move gradually towards the center
-    for (unsigned long deg = MIDDLE; deg < INNER; deg += 10ul) {
-      arm.move(deg);                           // Move to respective sector
+    for (unsigned long deg = INNER; deg < CORE; deg += 3ul) {
+      arm.move(deg);                           // Move to respective track
       while (cake.step_number < cake.steps)    // Move cake stand one full rotation
         cake.move();
       cake.step_number = 0;
     }
     break;
   }
-  arm.move(OUTER); // Move to outer sector
+  arm.move(OUTER); // Move to outer track
 }
