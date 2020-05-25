@@ -40,7 +40,8 @@
 #define DATA            0   // 8
 #define DIAG            1   // 9
 #define CLR             2   // 10
-#define ADR_EN          3   // 11
+#define AUDIO_OUT       3   // 11
+#define ADR_EN          4   // 12
 
 // Port C
 #define KEYPAD_ACTIVE   4   // A4
@@ -49,27 +50,50 @@
 #define KEYPAD_1        1   // A1
 #define KEYPAD_0        0   // A0
 
+// Audio
+// Tones
+#define TONE_c  3830    // 261 Hz
+#define TONE_d  3400    // 294 Hz
+#define TONE_e  3038    // 329 Hz
+#define TONE_f  2864    // 349 Hz
+#define TONE_g  2550    // 392 Hz
+#define TONE_a  2272    // 440 Hz
+#define TONE_b  2028    // 493 Hz
+#define TONE_C  1912    // 523 Hz
+#define TONE_D  1703    // 587 Hz
+#define TONE_E  1517    // 659 Hz
+#define TONE_R  0
+
 // Utility functions
 void runDiagnostics();
 void display(byte type, byte x);
 bool checkPassword();
-static void displayStep(byte type, byte x);
+void displayStep(byte type, byte x);
+void playTone();
 
 // Global Variables
 const byte changePW[] = { 1, 2, 1, 2 };
 byte password[] = { 1, 2, 3, 4 };
 byte current_mode = NUMBER;
+
 byte input[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 char input_ptr = 0;
-byte audio_state = 0;
-bool just_toggled = false;
 
 byte key_press = 0xFF;
 bool keypad_state = false;
+bool just_toggled = false;
+
+int audio_melody[] = { TONE_c, TONE_d, TONE_e, TONE_f, TONE_g, TONE_a, TONE_b, TONE_C, TONE_D, TONE_E };
+int audio_beat = 8;
+long audio_tempo = 8192;
+int audio_rest_count = 100;
+// ---
+int audio_tone = 0;
+long audio_duration = 0;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
-  DDRD |= 0b1111111;    // 0-7   Output
+  DDRD |= 0b11111111;   // 0-7   Output
   DDRB |= 0b111111;     // 8-13  Output
   DDRC &= ~(0b11111);   // A0-A4 Input
   CLEAR_LEDS();
@@ -97,6 +121,11 @@ void loop() {
 
     // Clear the recent toggle flag
     just_toggled = false;
+
+    // Play audio cue
+    audio_tone = audio_melody[key_press];
+    audio_duration = audio_beat * audio_tempo;
+    playTone();
   }
   displayStep(current_mode ^ just_toggled, key_press);
 
@@ -111,6 +140,11 @@ void loop() {
       input[i] = 0xFF;
     }
     input_ptr = 0;
+
+    // Play longer audio cue
+    audio_tone = audio_melody[key_press];
+    audio_duration = audio_beat * audio_tempo * 2;
+    playTone();
   } 
 }
 
@@ -292,4 +326,29 @@ void displayStep(byte type, byte x) {
   PORTD = array[iX++];
   digitalWrite(8 + ADR_EN, HIGH);
   previousTime = millis();
+}
+
+// audio_tone
+// audio_melody
+void playTone() {
+  long elapsed_time = 0;
+  // If this isn't a Rest beat
+  if (audio_tone > 0) {
+    // While the tone has played less long than 'duration', pulse speaker HIGH and LOW
+    while (elapsed_time < audio_duration) {
+      digitalWrite(8 + AUDIO_OUT, HIGH);
+      delayMicroseconds(audio_tone / 2);
+      digitalWrite(8 + AUDIO_OUT, LOW);
+      delayMicroseconds(audio_tone / 2);
+
+      // Keep track of how long we pulsed
+      elapsed_time += (audio_tone);
+    }
+  }
+  // Rest beat; loop times delay
+  else {
+    for (int j = 0; j < audio_rest_count; j++) {
+      delayMicroseconds(audio_duration);  
+    }                                
+  }                                
 }

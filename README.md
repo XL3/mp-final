@@ -19,8 +19,6 @@ monofont: inconsolata
 ### Audio out device
 - 1b        analog-output   sound control
 
-----------------------------------------------------------------------------------------------------
-
 ## Cake Decorator
 ### Making the cake
 - Open the eggs valve        (500  ms): `servo motor`
