@@ -64,9 +64,17 @@ void setup() {
   DDRD |= 0b1111111;
   DDRB &= ~(0b111);
   DDRB |= 0b111 << 3;
+
+  eggs.move(CLOSE);
+  vanilla.move(CLOSE);
+  sugar.move(CLOSE);
+  flour.move(CLOSE);
+  arm.move(CLOSE);
 }
 
 void loop() {
+  mixer.speed = 10;
+
   /// Make the cake
   // Open the eggs valve for 500ms
   eggs.move(OPEN);

@@ -157,7 +157,7 @@ void runDiagnostics() {
     digitalWrite(8 + ADR_EN, LOW);
     PORTD = 0xF0 + i;
     digitalWrite(8 + ADR_EN, HIGH);
-    DELAY_MS(8);
+    DELAY_MS(200);
 
     CLEAR_LEDS();
   }
@@ -166,7 +166,7 @@ void runDiagnostics() {
     digitalWrite(8 + ADR_EN, LOW);
     PORTD = (i << 4) + 0xF;
     digitalWrite(8 + ADR_EN, HIGH);
-    DELAY_MS(8);
+    DELAY_MS(200);
 
     CLEAR_LEDS();
   }
@@ -319,7 +319,7 @@ void displayStep(byte type, byte x) {
   // If the shape is complete, return
   // If not enough time has passed, return
   if (iX == count) return;
-  if (millis() - previousTime < 5) return;
+  if (millis() - previousTime < 100) return;
 
   // Display and increment index
   digitalWrite(8 + ADR_EN, LOW);
