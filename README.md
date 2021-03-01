@@ -1,10 +1,5 @@
----
-duedate: June 2nd
-geometry:
-- margin=1in
-monofont: inconsolata
----
-# Final Assessment
+# Final Assessment project for Microprocessors-II
+Simulations for a Cake Decorator and a LED Panel, using Arduino and SimulIDE.
 
 ## Light Panel
 ### 10x10 LED grid
